@@ -5,6 +5,8 @@
 #include <sstream>
 #include <string>
 
+std::uint64_t currentTimeMs = 0; //
+
 const char* stateToString(BatteryState state)
 {
     switch (state)
@@ -17,6 +19,9 @@ const char* stateToString(BatteryState state)
 
         case BatteryState::InSlotNotCharging:
             return "InSlotNotCharging";
+
+        case BatteryState::StorageDischarge:
+            return "StorageDischarge";
     }
 
     return "Unknown";
@@ -33,6 +38,7 @@ void printCommands()
     std::cout << "remove        remove battery from the slot" << "\n";
     std::cout << "update        update the state machine" << "\n";
     std::cout << "state         print battery state" << "\n";
+    std::cout << "tick          advance current time (Ms)" << "\n";
     std::cout << "quit          exit the test harness" << "\n";
     std::cout << "---------------------------------------------------" << "\n";
     std::cout << "\n\n";
@@ -116,7 +122,7 @@ int main()
         }
         else if (command == "update")
         {
-            battery.update();
+            battery.update(currentTimeMs);
             std::cout << "State machine updated\n";
             std::cout << "Battery State: "
               << stateToString(battery.getState())
@@ -143,11 +149,30 @@ int main()
         else if (command == "quit")
         {
             running = false;
+        } else if(command == "tick")
+        {
+            int tick;
+
+            if (!(input >> tick))
+            {
+                std::cout << "Usage: tick <Ms>\n";
+            }
+            else
+            {
+                currentTimeMs += static_cast<std::uint64_t>(tick);
+                
+
+                std::cout << "Current Time "
+                        << currentTimeMs
+                        << " Ms"
+                        << "\n";
+            }
+
         }
         else
         {
             std::cout << "Unknown command\n";
         }
-        battery.update();
+        battery.update(currentTimeMs);
     }
 }

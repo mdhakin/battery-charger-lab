@@ -47,7 +47,7 @@ BatteryState Battery::getState() const
     return state_;
 }
 
-void Battery::update()
+void Battery::update(std::uint64_t nowMs)
 {
     switch (state_)
     {
@@ -56,39 +56,66 @@ void Battery::update()
         {
             if(isFullycharged())
             {
-                transitionTo(BatteryState::InSlotNotCharging);
+                transitionTo(BatteryState::InSlotNotCharging, nowMs);
             }else
             {
-                transitionTo(BatteryState::InSlotCharging);   
+                transitionTo(BatteryState::InSlotCharging, nowMs);   
             }
+        }else if (chargeLevel_ > 60)
+        {
+           const std::uint64_t elapsedMs = nowMs -stateEntryTimeMs_;
+
+           if(elapsedMs >= storageDelayMs_)
+           {
+                transitionTo(BatteryState::StorageDischarge, nowMs);
+           }
         }
         break;
     case BatteryState::InSlotCharging:
         if(!isInstalled_)
         {
-            transitionTo(BatteryState::NoSlot);
+            transitionTo(BatteryState::NoSlot, nowMs);
         }
         else if(isFullycharged())
         {
-            transitionTo(BatteryState::InSlotNotCharging);
+            transitionTo(BatteryState::InSlotNotCharging, nowMs);
         }
         break;
     case BatteryState::InSlotNotCharging:
         if(!isInstalled_)
         {
-            transitionTo(BatteryState::NoSlot);
+            transitionTo(BatteryState::NoSlot, nowMs);
         }
         else if(!isFullycharged())
         {
-            transitionTo(BatteryState::InSlotCharging);
+            transitionTo(BatteryState::InSlotCharging, nowMs);
         }
+        break;
+    case BatteryState::StorageDischarge:
+        if(isInstalled_)
+        {
+            if(isFullycharged())
+            {
+                transitionTo(BatteryState::InSlotNotCharging, nowMs);
+            }
+            else
+            {
+                 transitionTo(BatteryState::InSlotCharging, nowMs);
+            }
+        }
+        else if (chargeLevel_ <= 60)
+        {
+            transitionTo(BatteryState::NoSlot, nowMs);
+        }
+        
         break;
     default:
         break;
     }
 }
 
-void Battery::transitionTo(BatteryState newState)
+void Battery::transitionTo(BatteryState newState, std::uint64_t nowMs)
 {
     state_ = newState;
+    stateEntryTimeMs_ = nowMs;
 }

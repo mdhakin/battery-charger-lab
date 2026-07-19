@@ -6,7 +6,8 @@ enum class BatteryState
 {
     NoSlot,
     InSlotCharging,
-    InSlotNotCharging
+    InSlotNotCharging,
+    StorageDischarge
 };
 
 class Battery
@@ -18,7 +19,7 @@ class Battery
         void installInSlot();
         void removeFromSlot();
 
-        void update();
+        void update(std::uint64_t nowMs);
 
         [[nodiscard]] std::uint8_t getChargeLevel() const;
         [[nodiscard]] bool isInstalled() const;
@@ -27,7 +28,10 @@ class Battery
 
     private:
         BatteryState state_{BatteryState::NoSlot};
-        void transitionTo(BatteryState newState);
+        void transitionTo(BatteryState newState, std::uint64_t nowMs);
         std::uint8_t chargeLevel_{0};
         bool isInstalled_{false};
+        std::uint64_t stateEntryTimeMs_{0};
+
+        static constexpr std::uint64_t storageDelayMs_{5000};
 };
